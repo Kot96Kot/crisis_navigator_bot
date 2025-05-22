@@ -1,5 +1,18 @@
 import os
+import threading
+from flask import Flask
 from dotenv import load_dotenv
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Бот работает! Добро пожаловать 👋"
+
+def run_flask():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host='0.0.0.0', port=port)
+
 from telegram import (
     Update, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
 )
@@ -550,7 +563,7 @@ async def set_commands(app):
     ])
 
 def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).post_init(set_commands).build()
+    app_tg = ApplicationBuilder().token(BOT_TOKEN).post_init(set_commands).build()
 
     conv_handler = ConversationHandler(
         entry_points=[
@@ -577,12 +590,14 @@ def main():
         per_chat=True,
     )
 
-    app.add_handler(conv_handler)
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward_extra_message))
-    app.add_handler(CommandHandler("reply", reply_command))
+    app_tg.add_handler(conv_handler)
+    app_tg.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, forward_extra_message))
+    app_tg.add_handler(CommandHandler("reply", reply_command))
 
     print("Бот запущен!")
-    app.run_polling()
+    app_tg.run_polling()
 
 if __name__ == "__main__":
+    load_dotenv()
+    threading.Thread(target=run_flask, daemon=True).start()
     main()
