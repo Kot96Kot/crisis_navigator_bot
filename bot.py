@@ -534,10 +534,17 @@ async def reply_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     chat_id = context.args[0]
+    # Склеиваем всё, что после chat_id (и сохраняем \n если их вставляли вручную)
     text = " ".join(context.args[1:])
+    # Заменяем \n или \\n на настоящие переносы строк
+    text = text.replace('\\n', '\n')
 
     try:
-        await context.bot.send_message(chat_id=int(chat_id), text=text)
+        await context.bot.send_message(
+    chat_id=int(chat_id),
+    text=text,
+    parse_mode="HTML"
+)
         await update.message.reply_text("Ответ отправлен ✅")
     except Exception as e:
         await update.message.reply_text(f"Ошибка отправки: {e}")
