@@ -83,7 +83,11 @@ def fetch_all_horoscopes():
     logger.info("Fetching horoscopes from website")
     horoscopes = {}
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/58.0.3029.110 Safari/537.3"
+        )
     }
     for name, code in ZODIAC_SIGNS.items():
         url = HORO_URL_TEMPLATE.format(code)
@@ -95,7 +99,11 @@ def fetch_all_horoscopes():
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
             div = soup.find("div", class_="article__text")
-            text = div.get_text(separator="\n", strip=True) if div else "Не удалось получить гороскоп."
+            text = (
+                div.get_text(separator="\n", strip=True)
+                if div
+                else "Не удалось получить гороскоп."
+            )
             horoscopes[code] = text
         except Exception as e:
             logger.exception("Error fetching %s: %s", code, e)
