@@ -82,20 +82,17 @@ def save_cache(data):
 def fetch_all_horoscopes():
     logger.info("Fetching horoscopes from website")
     horoscopes = {}
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'
+    }
     for name, code in ZODIAC_SIGNS.items():
         url = HORO_URL_TEMPLATE.format(code)
         try:
-            response = requests.get(url, timeout=10)
+            response = requests.get(url, headers=headers, timeout=10)
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
-            div = (
-                soup.find("div", class_="article__item_alignment_left")
-                or soup.find(
-                    "div",
-                    class_="article__item article__item_alignment_left article__item_html",
-                )
-            )
-            text = div.get_text(strip=True) if div else "Не удалось получить гороскоп."
+            div = soup.find("div", class_="article__text")
+            text = div.get_text(separator="\n", strip=True) if div else "Не удалось получить гороскоп."
             horoscopes[code] = text
         except Exception as e:
             logger.exception("Error fetching %s: %s", code, e)
@@ -106,7 +103,6 @@ def fetch_all_horoscopes():
     }
     save_cache(data)
     return data
-
 
 def get_horoscope(sign_code):
     today = datetime.date.today().isoformat()
