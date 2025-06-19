@@ -89,6 +89,9 @@ def fetch_all_horoscopes():
         url = HORO_URL_TEMPLATE.format(code)
         try:
             response = requests.get(url, headers=headers, timeout=10)
+            print("=== START HTML ===")
+            print(response.text[:2000])
+            print("=== END HTML ===")            
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
             div = soup.find("div", class_="article__text")
