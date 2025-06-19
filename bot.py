@@ -93,9 +93,20 @@ def fetch_all_horoscopes():
         url = HORO_URL_TEMPLATE.format(code)
         try:
             response = requests.get(url, headers=headers, timeout=10)
+            # Сохраняем первые 10000 символов HTML для диагностики возможных
+            # ошибок (например, выдачи капчи или изменившейся разметки).
+            debug_path = os.path.abspath("debug.html")
+            with open(debug_path, "w", encoding="utf-8") as f:
+                f.write(response.text[:10000])
+            print(
+                "DEBUG: HTML сохранён в",
+                debug_path,
+                ", статус-код",
+                response.status_code,
+            )
             print("=== START HTML ===")
             print(response.text[:2000])
-            print("=== END HTML ===")            
+            print("=== END HTML ===")           
             response.raise_for_status()
             soup = BeautifulSoup(response.text, "html.parser")
             div = soup.find("div", class_="article__text")
