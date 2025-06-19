@@ -2,6 +2,7 @@ import json
 import os
 import logging
 import datetime
+from dotenv import load_dotenv
 
 import requests
 from bs4 import BeautifulSoup
@@ -19,8 +20,13 @@ from telegram.ext import (
     filters,
 )
 
-# Insert your bot token obtained from BotFather below
-BOT_TOKEN = "PASTE_YOUR_BOT_TOKEN"
+# Load bot token from .env or environment variable
+load_dotenv()
+BOT_TOKEN = os.getenv("TELEGRAM_TOKEN")
+if not BOT_TOKEN:
+    raise RuntimeError(
+        "TELEGRAM_TOKEN environment variable not set. Add it to your .env file."
+    )
 
 CACHE_FILE = "horoscope_cache.json"
 
