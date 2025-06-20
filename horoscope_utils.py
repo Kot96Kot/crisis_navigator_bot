@@ -3,7 +3,10 @@ import os
 import datetime
 import logging
 
-CACHE_FILE = os.path.abspath("horoscope_cache.json")
+CACHE_FILES = {
+    "meme": os.path.abspath("horoscope_cache_meme.json"),
+    "normal": os.path.abspath("horoscope_cache_normal.json"),
+}
 
 ZODIAC_SIGNS = {
     "Овен": "aries",
@@ -23,32 +26,34 @@ ZODIAC_SIGNS = {
 logger = logging.getLogger(__name__)
 
 
-def load_cache():
-    """Load horoscope cache from file."""
-    if os.path.exists(CACHE_FILE):
+def load_cache(mode: str = "meme"):
+    """Load horoscope cache for the given mode from file."""
+    path = CACHE_FILES.get(mode, CACHE_FILES["meme"])
+    if os.path.exists(path):
         try:
-            logger.info("Loading cache from %s", CACHE_FILE)
-            with open(CACHE_FILE, "r", encoding="utf-8") as f:
+            logger.info("Loading cache from %s", path)
+            with open(path, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
-            logger.exception("Failed to load cache")
+            logger.exception("Failed to load cache %s", path)
     return {"date": "", "horoscopes": {}}
 
 
-def save_cache(data):
-    """Save horoscope cache to file."""
+def save_cache(data, mode: str = "meme"):
+    """Save horoscope cache for the given mode to file."""
+    path = CACHE_FILES.get(mode, CACHE_FILES["meme"])
     try:
-        logger.info("Saving cache to %s", CACHE_FILE)
-        with open(CACHE_FILE, "w", encoding="utf-8") as f:
+        logger.info("Saving cache to %s", path)
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception:
-        logger.exception("Failed to save cache")
+        logger.exception("Failed to save cache %s", path)
 
 
-def get_horoscope(sign_code):
+def get_horoscope(sign_code, mode: str = "meme"):
     """Return horoscope text for the given sign from cache only."""
     today = datetime.date.today().isoformat()
-    cache = load_cache()
+    cache = load_cache(mode)
     if cache.get("date") != today:
         logger.error("Horoscope cache for %s is outdated", sign_code)
         return "Сегодня гороскоп не найден, попробуйте позже."
