@@ -4,8 +4,7 @@ import logging
 import datetime
 from dotenv import load_dotenv
 
-import requests
-from bs4 import BeautifulSoup
+import openai
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
@@ -27,6 +26,12 @@ if not BOT_TOKEN:
     raise RuntimeError(
         "TELEGRAM_TOKEN environment variable not set. Add it to your .env file."
     )
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+if not OPENAI_API_KEY:
+    raise RuntimeError(
+        "OPENAI_API_KEY environment variable not set. Add it to your .env file."
+    )
+openai.api_key = OPENAI_API_KEY
 
 CACHE_FILE = "horoscope_cache.json"
 
@@ -44,6 +49,21 @@ ZODIAC_SIGNS = {
     "Водолей": "aquarius",
     "Рыбы": "pisces",
 }
+# Support legacy button labels with emoji prefixes
+EMOJI_TO_NAME = {
+    "♈️Овен": "Овен",
+    "♉️Телец": "Телец",
+    "♊️Близнецы": "Близнецы",
+    "♋️Рак": "Рак",
+    "♌️Лев": "Лев",
+    "♍️Дева": "Дева",
+    "♎️Весы": "Весы",
+    "♏️Скорпион": "Скорпион",
+    "♐️Стрелец": "Стрелец",
+    "♑️Козерог": "Козерог",
+    "♒️Водолей": "Водолей",
+    "♓️Рыбы": "Рыбы",
+}
 
 KEYBOARD_LAYOUT = [
     ["Овен", "Телец", "Близнецы"],
@@ -51,8 +71,6 @@ KEYBOARD_LAYOUT = [
     ["Весы", "Скорпион", "Стрелец"],
     ["Козерог", "Водолей", "Рыбы"],
 ]
-
-HORO_URL_TEMPLATE = "https://horo.mail.ru/prediction/{}/today/"
 
 logging.basicConfig(
     level=logging.INFO,
@@ -79,46 +97,36 @@ def save_cache(data):
         logger.exception("Failed to save cache")
 
 
-def fetch_all_horoscopes():
-    logger.info("Fetching horoscopes from website")
+PROMPT_TEMPLATE = (
+    "Составь смешной, мемный, но при этом по-дружески поддерживающий "
+    "гороскоп на сегодня для знака {sign}. "
+    "Напиши 2–3 абзаца (примерно 400–600 знаков). "
+    "Не делай мистики, не пиши про магию, числа или удачные дни, не используй шаблоны. "
+    "Добавь легкий юмор, самоиронию, подбадривай. "
+    "Можешь вставить мемный поворот (\u201cНаконец-то дойдут руки до того самого приглашения…\u201d, "
+    "\u201cПереписка заиграет как серенада под балконом…\u201d). "
+    "Пиши так, будто это совет от старого доброго друга, который знает тебя 100 лет. "
+    "Можно использовать сравнения из повседневной жизни, но не делай слишком коротко. Не повторяйся."
+)
+
+
+def generate_all_horoscopes():
+    logger.info("Generating horoscopes using OpenAI")
     horoscopes = {}
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/58.0.3029.110 Safari/537.3"
-        )
-    }
     for name, code in ZODIAC_SIGNS.items():
-        url = HORO_URL_TEMPLATE.format(code)
+        prompt = PROMPT_TEMPLATE.format(sign=name)
         try:
-            response = requests.get(url, headers=headers, timeout=10)
-            # Сохраняем первые 10000 символов HTML для диагностики возможных
-            # ошибок (например, выдачи капчи или изменившейся разметки).
-            debug_path = os.path.abspath("debug.html")
-            with open(debug_path, "w", encoding="utf-8") as f:
-                f.write(response.text[:10000])
-            print(
-                "DEBUG: HTML сохранён в",
-                debug_path,
-                ", статус-код",
-                response.status_code,
+            response = openai.ChatCompletion.create(
+                model="gpt-4o",
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=500,
+                temperature=0.8,
             )
-            print("=== START HTML ===")
-            print(response.text[:2000])
-            print("=== END HTML ===")           
-            response.raise_for_status()
-            soup = BeautifulSoup(response.text, "html.parser")
-            div = soup.find("div", class_="article__text")
-            text = (
-                div.get_text(separator="\n", strip=True)
-                if div
-                else "Не удалось получить гороскоп."
-            )
-            horoscopes[code] = text
+            text = response.choices[0].message.content.strip()
         except Exception as e:
-            logger.exception("Error fetching %s: %s", code, e)
-            horoscopes[code] = "Не удалось получить гороскоп. Попробуйте позже."
+            logger.exception("Error generating %s: %s", code, e)
+            text = "Не удалось получить гороскоп. Попробуйте позже."
+        horoscopes[code] = text
     data = {
         "date": datetime.date.today().isoformat(),
         "horoscopes": horoscopes,
@@ -130,7 +138,7 @@ def get_horoscope(sign_code):
     today = datetime.date.today().isoformat()
     cache = load_cache()
     if cache.get("date") != today or sign_code not in cache.get("horoscopes", {}):
-        cache = fetch_all_horoscopes()
+        cache = generate_all_horoscopes()
     return cache.get("horoscopes", {}).get(sign_code, "Нет данных.")
 
 
@@ -161,7 +169,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not update.message:
         return
     text = update.message.text.strip()
-    sign_code = ZODIAC_SIGNS.get(text)
+    sign_name = EMOJI_TO_NAME.get(text, text)
+    sign_code = ZODIAC_SIGNS.get(sign_name)
     if not sign_code:
         await update.message.reply_text(
             "Пожалуйста, выберите знак зодиака из списка.", reply_markup=get_keyboard()
