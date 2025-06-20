@@ -91,6 +91,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         return
     horoscope = get_horoscope(sign_code)
+    horoscope = trim_text(horoscope)
     await update.message.reply_text(horoscope)
     await update.message.reply_text(
         "Карманный психолог | Солнышко, держись ☀️",
