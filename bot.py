@@ -17,6 +17,7 @@ from telegram.ext import (
 )
 
 from horoscope_utils import ZODIAC_SIGNS, get_horoscope
+from text_utils import trim_text
 
 # Load bot token from .env or environment variable
 load_dotenv()
