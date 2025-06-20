@@ -53,15 +53,26 @@ PROMPT_TEMPLATE = (
     "Заканчивай гороскоп завершённым предложением."
 )
 
+EMOTIONAL_HOROSCOPE_PROMPT = (
+    "Напиши гороскоп для знака {sign}, который читается как часть сериала — с интригой, эмоциями и неожиданным поворотом.\n"
+    "Гороскоп должен быть живым, ярким и вызывать желание следить за развитием событий: пусть будет как мини-история с началом, завязкой и намёком на продолжение. "
+    "Не используй мистику, не пиши о числах и “магии”, но добавь искреннюю поддержку, лёгкий юмор и чуть-чуть самоиронии.\n"
+    "Пусть у читателя возникает ощущение: 'Вот оно, про меня!' — как будто автор реально в курсе его жизни и настроения. "
+    "В тексте должен быть живой персонаж (сам читатель), внутренняя мотивация и желание узнать, что будет дальше.\n"
+    "Сделай финал с триггером: 'Хочешь узнать, чем закончится? Следи за гороскопом завтра.'\n"
+    "Объём — от 500 до 1000 символов. Пиши только уникальный сюжет, никакой копипасты и шаблонов!"
+)
 
-def generate_all_horoscopes():
+
+def generate_all_horoscopes(mode: str = "meme"):
     """Generate fresh horoscopes for all signs and save them to cache."""
     logger.info("Starting horoscope generation")
-    cache = load_cache()
+    cache = load_cache(mode)
     horoscopes = cache.get("horoscopes", {})
     errors = False
+    template = PROMPT_TEMPLATE if mode == "meme" else EMOTIONAL_HOROSCOPE_PROMPT
     for name, code in ZODIAC_SIGNS.items():
-        prompt = PROMPT_TEMPLATE.format(sign=name)
+        prompt = template.format(sign=name)
         try:
             logger.info("Requesting horoscope for %s", name)
             response = client.chat.completions.create(
@@ -85,9 +96,14 @@ def generate_all_horoscopes():
         "date": date,
         "horoscopes": horoscopes,
     }
-    save_cache(data)
+    save_cache(data, mode)
     return data
 
 
 if __name__ == "__main__":
-    generate_all_horoscopes()
+    import sys
+
+    mode = "meme"
+    if len(sys.argv) > 1 and sys.argv[1] in {"meme", "normal"}:
+        mode = sys.argv[1]
+    generate_all_horoscopes(mode)
