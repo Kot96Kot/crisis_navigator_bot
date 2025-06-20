@@ -17,10 +17,6 @@ from telegram.ext import (
 )
 
 from horoscope_utils import ZODIAC_SIGNS, get_horoscope
-from generate_horoscopes import generate_all_horoscopes
-
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 
 # Load bot token from .env or environment variable
 load_dotenv()
@@ -115,10 +111,6 @@ async def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_error_handler(error_handler)
-
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(generate_all_horoscopes, CronTrigger(hour=0, minute=0))
-    scheduler.start()
 
     logger.info("Bot started")
     await application.run_polling()
