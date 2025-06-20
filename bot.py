@@ -4,7 +4,7 @@ import logging
 import datetime
 from dotenv import load_dotenv
 
-import openai
+from openai import OpenAI
 from telegram import (
     Update,
     ReplyKeyboardMarkup,
@@ -31,10 +31,9 @@ if not OPENAI_API_KEY:
     raise RuntimeError(
         "OPENAI_API_KEY environment variable not set. Add it to your .env file."
     )
-openai.api_key = OPENAI_API_KEY
-client = openai.OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=OPENAI_API_KEY)
 
-CACHE_FILE = "horoscope_cache.json"
+CACHE_FILE = os.path.abspath("horoscope_cache.json")
 
 ZODIAC_SIGNS = {
     "Овен": "aries",
@@ -136,7 +135,8 @@ PROMPT_TEMPLATE = (
 def generate_all_horoscopes():
     """Generate fresh horoscopes for all signs and save them to cache."""
     logger.info("Starting horoscope generation")
-    horoscopes = {}
+    cache = load_cache()
+    horoscopes = cache.get("horoscopes", {})
     for name, code in ZODIAC_SIGNS.items():
         prompt = PROMPT_TEMPLATE.format(sign=name)
         try:
@@ -148,9 +148,10 @@ def generate_all_horoscopes():
                 temperature=0.8,
             )
             text = response.choices[0].message.content.strip()
+            logger.info("Received %s: %s", name, text[:100])
         except Exception as e:
-            logger.exception("Error generating %s: %s", code, e)
-            text = "Сегодня гороскоп не найден, попробуйте позже."
+            logger.exception("Error generating %s with key %s", code, OPENAI_API_KEY[:6])
+            text = horoscopes.get(code) or "Сегодня гороскоп не найден, попробуйте позже."
         horoscopes[code] = text
     data = {
         "date": datetime.date.today().isoformat(),
@@ -220,7 +221,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
-    logger.error("Exception while handling an update:", exc_info=context.error)
+    logger.exception("Exception while handling an update")
 
 
 def main():
