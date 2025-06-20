@@ -74,6 +74,7 @@ def generate_all_horoscopes(mode: str = "meme"):
     template = PROMPT_TEMPLATE if mode == "meme" else EMOTIONAL_HOROSCOPE_PROMPT
     for name, code in ZODIAC_SIGNS.items():
         prompt = template.format(sign=name)
+        logger.debug("Prompt for %s: %s", name, prompt)
         try:
             logger.info("Requesting horoscope for %s", name)
             response = client.chat.completions.create(
@@ -97,6 +98,7 @@ def generate_all_horoscopes(mode: str = "meme"):
         "date": date,
         "horoscopes": horoscopes,
     }
+    logger.info("Saving horoscopes to cache for mode %s", mode)
     save_cache(data, mode)
     return data
 
