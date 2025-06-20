@@ -3,7 +3,7 @@ import os
 import logging
 import datetime
 from dotenv import load_dotenv
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from openai import OpenAI
 from telegram import (
@@ -252,7 +252,7 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
 async def main():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    scheduler = AsyncIOScheduler()
+    scheduler = BackgroundScheduler()
     scheduler.add_job(generate_all_horoscopes, "cron", hour=0, minute=1)
     scheduler.start()
     generate_all_horoscopes()
