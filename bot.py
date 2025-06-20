@@ -3,6 +3,7 @@ import os
 import logging
 import datetime
 from dotenv import load_dotenv
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 from openai import OpenAI
 from telegram import (
@@ -185,17 +186,17 @@ def generate_all_horoscopes():
     return data
 
 def get_horoscope(sign_code):
-    """Return horoscope text for the given sign."""
+    """Return horoscope text for the given sign from cache only."""
     today = datetime.date.today().isoformat()
     cache = load_cache()
-    if cache.get("date") != today or sign_code not in cache.get("horoscopes", {}):
-        logger.info("Cache miss or outdated. Generating new horoscopes")
-        cache = generate_all_horoscopes()
+    if cache.get("date") != today:
+        logger.error("Horoscope cache for %s is outdated", sign_code)
+        return "Сегодня гороскоп не найден, попробуйте позже."
     horoscope = cache.get("horoscopes", {}).get(sign_code)
     if not horoscope:
         logger.error("Horoscope for %s not found in cache", sign_code)
         return "Сегодня гороскоп не найден, попробуйте позже."
-    logger.info("Delivering horoscope for %s", sign_code)
+    logger.info("Delivering horoscope for %s from cache", sign_code)
     return horoscope
 
 
@@ -250,6 +251,11 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
 
 def main():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
+
+        scheduler = AsyncIOScheduler()
+    scheduler.add_job(generate_all_horoscopes, "cron", hour=0, minute=1)
+    scheduler.start()
+    generate_all_horoscopes()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
