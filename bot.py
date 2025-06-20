@@ -80,7 +80,7 @@ def get_inline_button():
         [
             [
                 InlineKeyboardButton(
-                    "Карманный психолог | Солнышко, держись ☀️",
+                    "Поговорить сейчас☀️",
                     url="https://t.me/crisis_navigatorbot?start=github_com_kot96kot_crisis_navigator_bot_edit_main_bot_py",
                 )
             ]
