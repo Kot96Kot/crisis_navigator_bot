@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 
 from horoscope_utils import ZODIAC_SIGNS, load_cache, save_cache
+from text_utils import trim_text
 
 logging.basicConfig(
     level=logging.INFO,
@@ -70,20 +71,7 @@ def generate_all_horoscopes():
                 temperature=0.8,
             )
             text = response.choices[0].message.content.strip()
-            if len(text) > 1000:
-                text = text[:1000]
-                last_space = text.rfind(' ')
-                if last_space != -1:
-                    text = text[:last_space]
-            if len(text) < 1000:
-                text += '\n\n(добавь чуть больше юмора и поддержки, чтобы был минимум 500 символов)'
-            if len(text) > 1000:
-                text = text[:1000]
-                last_space = text.rfind(' ')
-                if last_space != -1:
-                    text = text[:last_space]
-            if len(text) < 1000:
-                text += '\n\n(добавь чуть больше юмора и поддержки, чтобы был минимум 500 символов)'
+            text = trim_text(text)
             logger.info("Received %s: %s", name, text[:100])
         except Exception:
             logger.exception("Error generating %s with key %s", code, OPENAI_API_KEY[:6])
