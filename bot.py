@@ -32,6 +32,7 @@ if not OPENAI_API_KEY:
         "OPENAI_API_KEY environment variable not set. Add it to your .env file."
     )
 openai.api_key = OPENAI_API_KEY
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 
 CACHE_FILE = "horoscope_cache.json"
 
@@ -134,7 +135,7 @@ def generate_all_horoscopes():
     for name, code in ZODIAC_SIGNS.items():
         prompt = PROMPT_TEMPLATE.format(sign=name)
         try:
-            response = openai.ChatCompletion.create(
+            response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[{"role": "user", "content": prompt}],
                 max_tokens=500,
