@@ -249,7 +249,7 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
     logger.exception("Exception while handling an update")
 
 
-def main():
+async def main():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
     scheduler = AsyncIOScheduler()
@@ -262,8 +262,9 @@ def main():
     application.add_error_handler(error_handler)
 
     logger.info("Bot started")
-    application.run_polling()
+    await application.run_polling()
 
 
 if __name__ == "__main__":
-    main()
+    import asyncio
+    asyncio.run(main())
