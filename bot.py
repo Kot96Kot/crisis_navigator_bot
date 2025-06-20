@@ -137,6 +137,7 @@ def generate_all_horoscopes():
     logger.info("Starting horoscope generation")
     cache = load_cache()
     horoscopes = cache.get("horoscopes", {})
+    errors = False
     for name, code in ZODIAC_SIGNS.items():
         prompt = PROMPT_TEMPLATE.format(sign=name)
         try:
@@ -152,9 +153,14 @@ def generate_all_horoscopes():
         except Exception as e:
             logger.exception("Error generating %s with key %s", code, OPENAI_API_KEY[:6])
             text = horoscopes.get(code) or "Сегодня гороскоп не найден, попробуйте позже."
+            errors = True
         horoscopes[code] = text
+    date = datetime.date.today().isoformat()
+    if errors:
+        # Keep previous date so cache will refresh on next request
+        date = cache.get("date", "")
     data = {
-        "date": datetime.date.today().isoformat(),
+        "date": date,
         "horoscopes": horoscopes,
     }
     save_cache(data)
