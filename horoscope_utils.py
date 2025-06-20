@@ -41,8 +41,8 @@ def load_cache(mode: str = "meme"):
     return {"date": "", "horoscopes": {}}
 
 
-def refresh_cache_if_needed(mode: str = "meme"):
-    """Return cached data, regenerating if it's missing or outdated."""
+def save_cache(data, mode: str = "meme"):
+    """Save horoscope cache for the given mode to file."""
     path = CACHE_FILES.get(mode, CACHE_FILES["meme"])
     try:
         logger.info("Saving cache to %s", path)
@@ -52,10 +52,10 @@ def refresh_cache_if_needed(mode: str = "meme"):
         logger.exception("Failed to save cache %s", path)
 
 
-def get_horoscope(sign_code, mode: str = "meme"):
-    """Return horoscope text for the given sign from cache only."""
-    today = datetime.date.today().isoformat()
+def refresh_cache_if_needed(mode: str = "meme"):
+    """Return cached data, regenerating if it's missing or outdated."""
     cache = load_cache(mode)
+    today = datetime.date.today().isoformat()
     if cache.get("date") == today and cache.get("horoscopes"):
         return cache
     try:
