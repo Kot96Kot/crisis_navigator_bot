@@ -36,6 +36,8 @@ def load_cache(mode: str = "meme"):
                 return json.load(f)
         except Exception:
             logger.exception("Failed to load cache %s", path)
+    else:
+        logger.debug("Cache file %s does not exist", path)
     return {"date": "", "horoscopes": {}}
 
 
@@ -54,8 +56,14 @@ def get_horoscope(sign_code, mode: str = "meme"):
     """Return horoscope text for the given sign from cache only."""
     today = datetime.date.today().isoformat()
     cache = load_cache(mode)
+    logger.debug("Cache date: %s, today: %s", cache.get("date"), today)
     if cache.get("date") != today:
-        logger.error("Horoscope cache for %s is outdated", sign_code)
+        logger.error(
+            "Horoscope cache for %s is outdated: cache date %s, today %s",
+            sign_code,
+            cache.get("date"),
+            today,
+        )
         return "Сегодня гороскоп не найден, попробуйте позже."
     horoscope = cache.get("horoscopes", {}).get(sign_code)
     if not horoscope:
