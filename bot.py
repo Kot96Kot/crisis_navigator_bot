@@ -81,8 +81,10 @@ logger = logging.getLogger(__name__)
 
 
 def load_cache():
+    """Load horoscope cache from file."""    
     if os.path.exists(CACHE_FILE):
         try:
+            logger.info("Loading cache from %s", CACHE_FILE)
             with open(CACHE_FILE, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception:
@@ -91,7 +93,9 @@ def load_cache():
 
 
 def save_cache(data):
+    """Save horoscope cache to file."""
     try:
+        logger.info("Saving cache to %s", CACHE_FILE)
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
     except Exception:
@@ -130,11 +134,13 @@ PROMPT_TEMPLATE = (
 
 
 def generate_all_horoscopes():
-    logger.info("Generating horoscopes using OpenAI")
+    """Generate fresh horoscopes for all signs and save them to cache."""
+    logger.info("Starting horoscope generation")
     horoscopes = {}
     for name, code in ZODIAC_SIGNS.items():
         prompt = PROMPT_TEMPLATE.format(sign=name)
         try:
+            logger.info("Requesting horoscope for %s", name)
             response = client.chat.completions.create(
                 model="gpt-4o",
                 messages=[{"role": "user", "content": prompt}],
@@ -144,7 +150,7 @@ def generate_all_horoscopes():
             text = response.choices[0].message.content.strip()
         except Exception as e:
             logger.exception("Error generating %s: %s", code, e)
-            text = "Не удалось получить гороскоп. Попробуйте позже."
+            text = "Сегодня гороскоп не найден, попробуйте позже."
         horoscopes[code] = text
     data = {
         "date": datetime.date.today().isoformat(),
@@ -154,11 +160,18 @@ def generate_all_horoscopes():
     return data
 
 def get_horoscope(sign_code):
+    """Return horoscope text for the given sign."""
     today = datetime.date.today().isoformat()
     cache = load_cache()
     if cache.get("date") != today or sign_code not in cache.get("horoscopes", {}):
+        logger.info("Cache miss or outdated. Generating new horoscopes")
         cache = generate_all_horoscopes()
-    return cache.get("horoscopes", {}).get(sign_code, "Нет данных.")
+    horoscope = cache.get("horoscopes", {}).get(sign_code)
+    if not horoscope:
+        logger.error("Horoscope for %s not found in cache", sign_code)
+        return "Сегодня гороскоп не найден, попробуйте позже."
+    logger.info("Delivering horoscope for %s", sign_code)
+    return horoscope
 
 
 def get_keyboard():
