@@ -252,7 +252,7 @@ async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE):
 def main():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
 
-        scheduler = AsyncIOScheduler()
+    scheduler = AsyncIOScheduler()
     scheduler.add_job(generate_all_horoscopes, "cron", hour=0, minute=1)
     scheduler.start()
     generate_all_horoscopes()
