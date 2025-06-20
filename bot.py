@@ -154,6 +154,17 @@ async def send_daily_reminders(context: ContextTypes.DEFAULT_TYPE):
         except Exception:
             logger.exception("Failed to send reminder to %s", chat_id)
 
+async def update_all_horoscopes(context: ContextTypes.DEFAULT_TYPE):
+    """Generate horoscopes for both modes once per day."""
+    try:
+        import generate_horoscopes
+
+        generate_horoscopes.generate_all_horoscopes("meme")
+        generate_horoscopes.generate_all_horoscopes("normal")
+        logger.info("Horoscope cache successfully updated")
+    except Exception:
+        logger.exception("Failed to update daily horoscopes")
+
 
 async def stats(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.effective_user.id != ADMIN_USER_ID:
@@ -231,7 +242,9 @@ def main():
     application.job_queue.run_daily(
         send_daily_reminders, time=datetime.time(hour=9, minute=0)
     )
-
+    application.job_queue.run_daily(
+        update_all_horoscopes, time=datetime.time(hour=0, minute=1)
+    )
 
     logger.info("Bot started")
     application.run_polling()
